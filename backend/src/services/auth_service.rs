@@ -40,12 +40,13 @@ impl AuthService {
         tracing::debug!("Inserting user into database: {}", req.username);
         // Insert user
         let result = sqlx::query(
-            "INSERT INTO users (username, password_hash, email, avatar) VALUES (?, ?, ?, ?)",
+            "INSERT INTO users (username, password_hash, email, avatar, first_log) VALUES (?, ?, ?, ?, ?)",
         )
         .bind(&req.username)
         .bind(&password_hash)
         .bind(&req.email)
         .bind(&req.avatar)
+        .bind(true)
         .execute(&self.pool)
         .await?;
 
@@ -143,7 +144,7 @@ impl AuthService {
 
             // Update password
             sqlx::query(
-                "UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                "UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP, first_log = 0 WHERE id = ?",
             )
             .bind(&new_password_hash)
             .bind(user_id)

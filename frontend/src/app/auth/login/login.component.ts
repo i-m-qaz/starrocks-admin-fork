@@ -66,12 +66,20 @@ export class LoginComponent implements OnInit {
           localStorage.removeItem('remembered_username');
         }
         
-        // Show single toast notification for login success
-        this.toastrService.success('Welcome back!', 'Login Successful');
-        // Navigate to return URL using absolute navigation to prevent path duplication
-        setTimeout(() => {
-          this.router.navigateByUrl(this.returnUrl, { replaceUrl: true });
-        }, 500);
+        // Check if first login - redirect to password change page
+        if (response.user.first_log) {
+          // First login - redirect to user settings page without showing toast
+          // The toast will be shown in the user-settings page
+          setTimeout(() => {
+            this.router.navigate(['/pages/user-settings'], { replaceUrl: true });
+          }, 500);
+        } else {
+          // Normal login - show welcome message and navigate to return URL
+          this.toastrService.success('Welcome back!', 'Login Successful');
+          setTimeout(() => {
+            this.router.navigateByUrl(this.returnUrl, { replaceUrl: true });
+          }, 500);
+        }
       },
       error: (error) => {
         this.submitted = false;

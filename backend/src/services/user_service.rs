@@ -56,6 +56,7 @@ impl UserService {
             created_at: DateTime<Utc>,
             updated_at: DateTime<Utc>,
             organization_name: Option<String>,
+            first_log: bool,
         }
 
         let users_with_org: Vec<UserWithOrgName> = sqlx::query_as(&filtered_query)
@@ -76,6 +77,7 @@ impl UserService {
                     organization_id: user_with_org.organization_id,
                     created_at: user_with_org.created_at,
                     updated_at: user_with_org.updated_at,
+                    first_log: user_with_org.first_log,
                 };
                 let roles = roles_map.get(&user.id);
                 self.compose_user_with_org(user, user_with_org.organization_name, roles)

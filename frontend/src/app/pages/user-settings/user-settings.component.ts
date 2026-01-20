@@ -14,6 +14,7 @@ export class UserSettingsComponent implements OnInit {
   loading = false;
   submitted = false;
   currentUser: User | null = null;
+  isFirstLogin = false;
   
   userForm = {
     username: '',
@@ -54,6 +55,16 @@ export class UserSettingsComponent implements OnInit {
         this.userForm.email = user.email || '';
         this.userForm.avatar = user.avatar || this.availableAvatars[0];
         this.loading = false;
+        
+        // Check if this is first login - show toast notification
+        if (user.first_log) {
+          this.isFirstLogin = true;
+          this.showPasswordFields = true; // Auto-show password fields for first login
+          this.toastrService.warning('初次登陆请修改账号密码', '提示', {
+            duration: 0, // Set to 0 so the toast doesn't auto-close
+            destroyByClick: true,
+          });
+        }
       },
       error: (error) => {
         this.toastrService.danger('Failed to load user information', 'Error');
