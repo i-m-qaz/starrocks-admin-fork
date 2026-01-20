@@ -135,6 +135,24 @@ impl AuthService {
                 return Err(ApiError::validation_error("Current password is incorrect"));
             }
 
+            // Validate new password complexity
+            tracing::debug!("Validating password complexity for user_id: {}", user_id);
+            if new_pwd.len() < 6 {
+                return Err(ApiError::validation_error("Password must be at least 6 characters"));
+            }
+            if !new_pwd.chars().any(|c| c.is_ascii_uppercase()) {
+                return Err(ApiError::validation_error("Password must contain at least one uppercase letter"));
+            }
+            if !new_pwd.chars().any(|c| c.is_ascii_lowercase()) {
+                return Err(ApiError::validation_error("Password must contain at least one lowercase letter"));
+            }
+            if !new_pwd.chars().any(|c| c.is_ascii_digit()) {
+                return Err(ApiError::validation_error("Password must contain at least one number"));
+            }
+            if !new_pwd.chars().any(|c| !c.is_alphanumeric()) {
+                return Err(ApiError::validation_error("Password must contain at least one special character"));
+            }
+
             // Hash new password
             tracing::debug!("Hashing new password for user_id: {}", user_id);
             let new_password_hash = hash(new_pwd, DEFAULT_COST).map_err(|e| {
