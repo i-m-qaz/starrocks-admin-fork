@@ -144,7 +144,7 @@ export class UserSettingsComponent implements OnInit {
       const hasUpperCase = /[A-Z]/.test(this.userForm.newPassword);
       const hasLowerCase = /[a-z]/.test(this.userForm.newPassword);
       const hasNumber = /[0-9]/.test(this.userForm.newPassword);
-      const hasSpecialChar = /[!@#$%^&*()_+-=\[\]{};':"\\|,.<>\/?]/.test(this.userForm.newPassword);
+      const hasSpecialChar = /[!@#$%^&*()_+=\[\]{};':"\\|,.<>\/?-]/.test(this.userForm.newPassword);
 
       if (!hasUpperCase) {
         this.errors.push('新密码必须包含至少一个大写字母');
