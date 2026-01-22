@@ -70,6 +70,11 @@ export class AuthService {
     return this.permissionService.hasPermission('api:organizations:create');
   }
 
+  public needsPasswordChange(): boolean {
+    const user = this.currentUserSubject.value;
+    return user?.first_log === true;
+  }
+
   login(credentials: LoginRequest): Observable<LoginResponse> {
     return this.api.post<LoginResponse>('/auth/login', credentials).pipe(
       tap((response) => {

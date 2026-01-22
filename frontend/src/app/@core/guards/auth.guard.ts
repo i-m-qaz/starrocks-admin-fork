@@ -13,10 +13,15 @@ export class AuthGuard implements CanActivate {
 
   canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): boolean | UrlTree {
     if (this.authService.isAuthenticated()) {
+      if (this.authService.needsPasswordChange()) {
+        if (!state.url.includes('/pages/user-settings')) {
+          const urlTree = this.router.createUrlTree(['/pages/user-settings']);
+          return urlTree;
+        }
+      }
       return true;
     }
 
-    // Not logged in, redirect to login page with return URL
     const targetUrl = this.authService.normalizeReturnUrl(state.url);
     const commands = this.authService.getLoginCommands();
     const urlTree = this.router.createUrlTree(commands, {

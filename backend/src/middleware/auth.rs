@@ -99,6 +99,32 @@ pub async fn auth_middleware(
         organization_id
     };
 
+    // Check if user needs to change password on first login
+    let needs_password_change: bool = sqlx::query_scalar(
+        "SELECT first_log FROM users WHERE id = ?",
+    )
+    .bind(user_id)
+    .fetch_optional(&state.db)
+    .await
+    .unwrap_or(None)
+    .unwrap_or(false);
+
+    if needs_password_change {
+        let allowed_routes = [
+            "/api/auth/me".to_string(),
+        ];
+        let is_allowed_route = allowed_routes.iter().any(|route| uri.starts_with(route));
+        if !is_allowed_route {
+            tracing::warn!(
+                "User {} (ID: {}) blocked - must change password first. Attempted to access: {} {}",
+                claims.username, user_id, method, uri
+            );
+            return Err(ApiError::unauthorized(
+                "首次登录必须修改密码后才能使用系统功能",
+            ));
+        }
+    }
+
     // Insert legacy extensions to keep backward compatibility
     req.extensions_mut().insert(user_id);
     req.extensions_mut().insert(claims.username.clone());
