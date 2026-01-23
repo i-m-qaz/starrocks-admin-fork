@@ -1,7 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
-use bcrypt::{DEFAULT_COST, hash};
 use chrono::{DateTime, Utc};
 use sqlx::{FromRow, SqlitePool, Transaction, sqlite::Sqlite};
 
@@ -10,7 +9,7 @@ use crate::models::{
 };
 use crate::services::casbin_service::CasbinService;
 use crate::utils::organization_filter::apply_organization_filter;
-use crate::utils::{ApiError, ApiResult};
+use crate::utils::{hash_password, ApiError, ApiResult};
 
 #[derive(FromRow)]
 struct UserRoleRecord {
@@ -118,7 +117,7 @@ impl UserService {
         self.ensure_username_available(&mut tx, &req.username, None)
             .await?;
 
-        let password_hash = hash(&req.password, DEFAULT_COST)
+        let password_hash = hash_password(&req.password)
             .map_err(|err| ApiError::internal_error(format!("Failed to hash password: {}", err)))?;
 
         let result = {
@@ -213,9 +212,8 @@ impl UserService {
         }
 
         if let Some(password) = &req.password {
-            let password_hash = hash(password, DEFAULT_COST).map_err(|err| {
-                ApiError::internal_error(format!("Failed to hash password: {}", err))
-            })?;
+            let password_hash = hash_password(password)
+                .map_err(|err| ApiError::internal_error(format!("Failed to hash password: {}", err)))?;
 
             {
                 let conn = tx.as_mut();
@@ -235,7 +233,6 @@ impl UserService {
         }
 
         if let Some(new_org_id) = req.organization_id {
-            // Only check if organization_id is being changed (not just present)
             if !is_super_admin && Some(new_org_id) != existing_user.organization_id {
                 return Err(ApiError::forbidden(
                     "Only super administrators can reassign user organizations",

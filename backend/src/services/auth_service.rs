@@ -1,6 +1,6 @@
 use crate::models::{CreateUserRequest, LoginRequest, UpdateUserRequest, User, UserResponse};
 use crate::utils::{ApiError, ApiResult, JwtUtil};
-use bcrypt::{DEFAULT_COST, hash, verify};
+use crate::utils::password::{hash_password, verify_password};
 use sqlx::SqlitePool;
 use std::sync::Arc;
 
@@ -32,10 +32,11 @@ impl AuthService {
 
         tracing::debug!("Hashing password for user: {}", req.username);
         // Hash password
-        let password_hash = hash(&req.password, DEFAULT_COST).map_err(|e| {
-            tracing::error!("Password hashing failed for user {}: {}", req.username, e);
-            ApiError::internal_error(format!("Failed to hash password: {}", e))
-        })?;
+        let password_hash = hash_password(&req.password)
+            .map_err(|e| {
+                tracing::error!("Password hashing failed for user {}: {}", req.username, e);
+                ApiError::internal_error(format!("Failed to hash password: {}", e))
+            })?;
 
         tracing::debug!("Inserting user into database: {}", req.username);
         // Insert user
@@ -80,10 +81,11 @@ impl AuthService {
 
         tracing::debug!("Verifying password for user: {}", req.username);
         // Verify password
-        let valid = verify(&req.password, &user.password_hash).map_err(|e| {
-            tracing::error!("Password verification error for user {}: {}", req.username, e);
-            ApiError::internal_error(format!("Password verification failed: {}", e))
-        })?;
+        let valid = verify_password(&req.password, &user.password_hash)
+            .map_err(|e| {
+                tracing::error!("Password verification error for user {}: {}", req.username, e);
+                ApiError::internal_error(format!("Password verification failed: {}", e))
+            })?;
 
         if !valid {
             tracing::warn!("Login failed: invalid password for user '{}'", req.username);
@@ -125,10 +127,11 @@ impl AuthService {
         // If changing password, verify current password first
         if let (Some(current_pwd), Some(new_pwd)) = (&req.current_password, &req.new_password) {
             tracing::debug!("Verifying current password for user_id: {}", user_id);
-            let valid = verify(current_pwd, &user.password_hash).map_err(|e| {
-                tracing::error!("Password verification error: {}", e);
-                ApiError::internal_error(format!("Password verification failed: {}", e))
-            })?;
+            let valid = verify_password(current_pwd, &user.password_hash)
+                .map_err(|e| {
+                    tracing::error!("Password verification error: {}", e);
+                    ApiError::internal_error(format!("Password verification failed: {}", e))
+                })?;
 
             if !valid {
                 tracing::warn!("Current password verification failed for user_id: {}", user_id);
@@ -155,10 +158,11 @@ impl AuthService {
 
             // Hash new password
             tracing::debug!("Hashing new password for user_id: {}", user_id);
-            let new_password_hash = hash(new_pwd, DEFAULT_COST).map_err(|e| {
-                tracing::error!("Password hashing failed: {}", e);
-                ApiError::internal_error(format!("Failed to hash password: {}", e))
-            })?;
+            let new_password_hash = hash_password(new_pwd)
+                .map_err(|e| {
+                    tracing::error!("Password hashing failed: {}", e);
+                    ApiError::internal_error(format!("Failed to hash password: {}", e))
+                })?;
 
             // Update password
             sqlx::query(
