@@ -74,8 +74,9 @@ export class LoginComponent implements OnInit {
             this.router.navigate(['/pages/user-settings'], { replaceUrl: true });
           }, 500);
         } else {
-          // Normal login - show welcome message and navigate to return URL
+          // Normal login - show single toast notification for login success
           this.toastrService.success('Welcome back!', 'Login Successful');
+          // Navigate to return URL using absolute navigation to prevent path duplication
           setTimeout(() => {
             this.router.navigateByUrl(this.returnUrl, { replaceUrl: true });
           }, 500);

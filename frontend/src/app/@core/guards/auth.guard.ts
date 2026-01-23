@@ -22,6 +22,7 @@ export class AuthGuard implements CanActivate {
       return true;
     }
 
+    // Not logged in, redirect to login page with return URL
     const targetUrl = this.authService.normalizeReturnUrl(state.url);
     const commands = this.authService.getLoginCommands();
     const urlTree = this.router.createUrlTree(commands, {

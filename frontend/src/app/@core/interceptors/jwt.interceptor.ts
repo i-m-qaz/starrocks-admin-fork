@@ -35,6 +35,7 @@ export class JwtInterceptor implements HttpInterceptor {
       catchError((error: HttpErrorResponse) => {
         if (error.status === 401) {
           const errorMessage = error.error?.message || 'Unauthorized';
+          // Check if this is an authentication error (missing/invalid token) or permission error
           const isAuthError = errorMessage.includes('Missing authorization header') ||
                               errorMessage.includes('Invalid authorization header') ||
                               errorMessage.includes('JWT verification failed') ||
@@ -45,12 +46,19 @@ export class JwtInterceptor implements HttpInterceptor {
 
           if (this.authService.isAuthenticated()) {
             if (isAuthError) {
+              // Token is invalid/expired - clear auth and redirect to login
               this.toastrService.danger('登录已过期，请重新登录', '认证失败');
               const safeUrl = this.authService.normalizeReturnUrl(this.router.url);
               this.authService.logout({ returnUrl: safeUrl });
-            } else if (!isFirstLoginError) {
+            } else if (isFirstLoginError) {
+              // First login - show nothing
+            } else {
+              // Permission denied - show error message but don't logout
               this.toastrService.danger(errorMessage, '无权限');
             }
+          } else {
+            // User not authenticated - silently ignore (user has logged out)
+            // This happens when user logs out but components are still running auto-refresh
           }
         }
         return throwError(() => error);
