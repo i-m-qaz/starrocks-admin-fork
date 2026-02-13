@@ -26,7 +26,7 @@ pub fn hash_password(password: &str) -> Result<String, PasswordError> {
     let hash = base64::engine::general_purpose::STANDARD.encode(derived);
     let salt_b64 = base64::engine::general_purpose::STANDARD.encode(salt);
 
-    Ok(format!("${}$${}${}", ITERATIONS, salt_b64, hash))
+    Ok(format!("${}${}${}", ITERATIONS, salt_b64, hash))
 }
 
 pub fn verify_password(password: &str, stored: &str) -> Result<bool, PasswordError> {

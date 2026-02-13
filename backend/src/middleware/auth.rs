@@ -106,14 +106,17 @@ pub async fn auth_middleware(
     .bind(user_id)
     .fetch_optional(&state.db)
     .await
-    .unwrap_or(None)
+    .map_err(|err| {
+        tracing::warn!("Failed to check password change status for user {} (ID: {}): {:?}", claims.username, user_id, err);
+        err
+    })?
     .unwrap_or(false);
 
     if needs_password_change {
         let allowed_routes = [
             "/api/auth/me".to_string(),
         ];
-        let is_allowed_route = allowed_routes.iter().any(|route| uri.starts_with(route));
+        let is_allowed_route = allowed_routes.iter().any(|route| uri == *route);
         if !is_allowed_route {
             tracing::warn!(
                 "User {} (ID: {}) blocked - must change password first. Attempted to access: {} {}",
