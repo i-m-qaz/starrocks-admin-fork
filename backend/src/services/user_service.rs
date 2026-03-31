@@ -77,6 +77,8 @@ impl UserService {
                     created_at: user_with_org.created_at,
                     updated_at: user_with_org.updated_at,
                     first_log: user_with_org.first_log,
+                    failed_login_attempts: 0,
+                    locked_until: None,
                 };
                 let roles = roles_map.get(&user.id);
                 self.compose_user_with_org(user, user_with_org.organization_name, roles)

@@ -17,6 +17,10 @@ pub struct User {
     pub updated_at: DateTime<Utc>,
     pub organization_id: Option<i64>,
     pub first_log: bool,
+    #[serde(skip_serializing)]
+    pub failed_login_attempts: i32,
+    #[serde(skip_serializing)]
+    pub locked_until: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]

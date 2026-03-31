@@ -79,6 +79,22 @@ impl AuthService {
             ApiError::invalid_credentials()
         })?;
 
+        // Check if account is locked
+        if let Some(locked_until) = user.locked_until {
+            if locked_until > chrono::Utc::now() {
+                tracing::warn!("Login failed: account '{}' is locked until {:?}", req.username, locked_until);
+                return Err(ApiError::validation_error("Account is locked. Please try again later."));
+            } else {
+                // Lock has expired, reset lock status
+                sqlx::query(
+                    "UPDATE users SET locked_until = NULL, failed_login_attempts = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                )
+                .bind(user.id)
+                .execute(&self.pool)
+                .await?;
+            }
+        }
+
         tracing::debug!("Verifying password for user: {}", req.username);
         // Verify password
         let valid = verify_password(&req.password, &user.password_hash)
@@ -88,8 +104,54 @@ impl AuthService {
             })?;
 
         if !valid {
-            tracing::warn!("Login failed: invalid password for user '{}'", req.username);
-            return Err(ApiError::invalid_credentials());
+            // Increment failed login attempts
+            let new_attempts = user.failed_login_attempts + 1;
+            let mut locked_until: Option<chrono::DateTime<chrono::Utc>> = None;
+
+            // Check if account should be locked
+            if new_attempts >= 5 {
+                locked_until = Some(chrono::Utc::now() + chrono::Duration::minutes(30));
+                tracing::warn!("Account '{}' locked for 30 minutes after 5 failed attempts", req.username);
+            }
+
+            // Update failed attempts and lock status
+            sqlx::query(
+                "UPDATE users SET failed_login_attempts = ?, locked_until = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            )
+            .bind(new_attempts)
+            .bind(locked_until)
+            .bind(user.id)
+            .execute(&self.pool)
+            .await?;
+
+            tracing::warn!("Login failed: invalid password for user '{}' (attempt {}/{})", req.username, new_attempts, 5);
+            
+            if let Some(lock_time) = locked_until {
+                return Err(ApiError::validation_error_with_data(
+                    "Account is locked. Please try again later.",
+                    serde_json::json!({
+                        "locked_until": lock_time,
+                        "remaining_attempts": 0
+                    })
+                ));
+            } else {
+                return Err(ApiError::validation_error_with_data(
+                    "Invalid credentials",
+                    serde_json::json!({
+                        "remaining_attempts": 5 - new_attempts
+                    })
+                ));
+            }
+        }
+
+        // Reset failed login attempts on successful login
+        if user.failed_login_attempts > 0 || user.locked_until.is_some() {
+            sqlx::query(
+                "UPDATE users SET failed_login_attempts = 0, locked_until = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            )
+            .bind(user.id)
+            .execute(&self.pool)
+            .await?;
         }
 
         tracing::debug!("Generating JWT token for user: {}", req.username);
@@ -104,7 +166,13 @@ impl AuthService {
 
         tracing::info!("User logged in successfully: {} (ID: {})", user.username, user.id);
 
-        Ok((user, token))
+        // Fetch updated user
+        let updated_user: User = sqlx::query_as("SELECT * FROM users WHERE id = ?")
+            .bind(user.id)
+            .fetch_one(&self.pool)
+            .await?;
+
+        Ok((updated_user, token))
     }
 
     // Get user by ID

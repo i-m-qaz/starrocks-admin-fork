@@ -116,7 +116,7 @@ pub async fn auth_middleware(
         let allowed_routes = [
             "/api/auth/me".to_string(),
         ];
-        let is_allowed_route = allowed_routes.iter().any(|route| uri == *route);
+        let is_allowed_route = allowed_routes.contains(&uri);
         if !is_allowed_route {
             tracing::warn!(
                 "User {} (ID: {}) blocked - must change password first. Attempted to access: {} {}",

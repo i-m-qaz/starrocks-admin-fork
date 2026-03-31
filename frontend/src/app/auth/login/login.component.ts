@@ -86,7 +86,30 @@ export class LoginComponent implements OnInit {
         this.submitted = false;
         // Show error in alert (form validation errors use alert, API errors use alert too for consistency)
         const errorMessage = error.error?.message || 'Login failed. Please check your credentials.';
-        this.errors = [errorMessage];
+        
+        // Check for remaining attempts or lock information
+        if (error.error?.details) {
+          const details = error.error.details;
+          if (details.remaining_attempts !== undefined) {
+            if (details.remaining_attempts > 0) {
+              this.errors = [`${errorMessage} (${details.remaining_attempts} attempts remaining)`];
+            } else {
+              // Account is locked
+              if (details.locked_until) {
+                const lockTime = new Date(details.locked_until);
+                const lockTimeStr = lockTime.toLocaleString();
+                this.errors = [`${errorMessage} (Unlocks at ${lockTimeStr})`];
+              } else {
+                this.errors = [errorMessage];
+              }
+            }
+          } else {
+            this.errors = [errorMessage];
+          }
+        } else {
+          this.errors = [errorMessage];
+        }
+        
         this.showMessages = true;
         // Don't show toast for API errors since we already show alert
         // this.toastrService.danger(errorMessage, 'Login Failed');
