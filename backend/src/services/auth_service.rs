@@ -83,7 +83,13 @@ impl AuthService {
         if let Some(locked_until) = user.locked_until {
             if locked_until > chrono::Utc::now() {
                 tracing::warn!("Login failed: account '{}' is locked until {:?}", req.username, locked_until);
-                return Err(ApiError::validation_error("Account is locked. Please try again later."));
+                return Err(ApiError::validation_error_with_data(
+                    "Account is locked. Please try again later.",
+                    serde_json::json!({
+                        "locked_until": locked_until,
+                        "remaining_attempts": 0
+                    })
+                ));
             } else {
                 // Lock has expired, reset lock status
                 sqlx::query(
