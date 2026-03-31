@@ -84,35 +84,72 @@ export class LoginComponent implements OnInit {
       },
       error: (error) => {
         this.submitted = false;
-        // Show error in alert (form validation errors use alert, API errors use alert too for consistency)
-        const errorMessage = error.error?.message || 'Login failed. Please check your credentials.';
-        
-        // Check for remaining attempts or lock information
-        if (error.error?.details) {
-          const details = error.error.details;
-          if (details.remaining_attempts !== undefined) {
-            if (details.remaining_attempts > 0) {
-              this.errors = [`${errorMessage} (${details.remaining_attempts} attempts remaining)`];
-            } else {
-              // Account is locked
-              if (details.locked_until) {
-                const lockTime = new Date(details.locked_until);
-                const lockTimeStr = lockTime.toLocaleString();
-                this.errors = [`${errorMessage} (Unlocks at ${lockTimeStr})`];
-              } else {
-                this.errors = [errorMessage];
+        let errorMessage = error.error?.message || 'Login failed. Please check your credentials.';
+        let errorDetails = null;
+
+        // 检查错误对象的类型
+        if (typeof error === 'function') {
+          try {
+            const errorObj = error();
+            if (errorObj) {
+              // 检查是否是 HttpErrorResponse
+              if (errorObj.error) {
+                errorMessage = errorObj.error.message || errorMessage;
+                errorDetails = errorObj.error.details;
+              } else if (errorObj.message) {
+                errorMessage = errorObj.message || errorMessage;
+                errorDetails = errorObj.details;
               }
             }
-          } else {
-            this.errors = [errorMessage];
+          } catch (e) {
           }
-        } else {
-          this.errors = [errorMessage];
         }
-        
+        // 方式1：直接从error.error获取
+        else if (error.error) {
+          errorMessage = error.error.message || errorMessage;
+          errorDetails = error.error.details;
+        }
+        // 方式2：尝试从response获取
+        else if (error.response) {
+          errorMessage = error.response.message || errorMessage;
+          errorDetails = error.response.details;
+        }
+        // 方式3：尝试解析错误消息
+        else if (error.message) {
+          try {
+            const parsedError = JSON.parse(error.message);
+            errorMessage = parsedError.message || errorMessage;
+            errorDetails = parsedError.details;
+          } catch (e) {
+          }
+        }
+        // 方式4：检查是否有body属性
+        else if (error.body) {
+          errorMessage = error.body.message || errorMessage;
+          errorDetails = error.body.details;
+        }
+
+        this.errors = [errorMessage];
+
+        // 检查剩余尝试次数或锁定信息，在toast中显示信息
+        if (errorDetails) {
+          if (errorDetails.remaining_attempts !== undefined) {
+            if (errorDetails.remaining_attempts > 0) {
+              const toastMessage = `${errorMessage} (${errorDetails.remaining_attempts} attempts remaining)`;
+              this.toastrService.danger(toastMessage, 'Login Failed');
+            } else {
+              // Account is locked
+              if (errorDetails.locked_until) {
+                const lockTime = new Date(errorDetails.locked_until);
+                const lockTimeStr = lockTime.toLocaleString();
+                const toastMessage = `${errorMessage} (Unlocks at ${lockTimeStr})`;
+                this.toastrService.danger(toastMessage, 'Account Locked');
+              }
+            }
+          }
+        }
+
         this.showMessages = true;
-        // Don't show toast for API errors since we already show alert
-        // this.toastrService.danger(errorMessage, 'Login Failed');
       }
     });
   }
