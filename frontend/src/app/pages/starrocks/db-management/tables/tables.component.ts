@@ -4,7 +4,7 @@ import { NbToastrService, NbDialogService } from '@nebular/theme';
 import { ConfirmDialogComponent } from '../../../../@core/components/confirm-dialog/confirm-dialog.component';
 
 @Component({
-  selector: 'app-tables',
+  selector: 'ngx-tables',
   templateUrl: './tables.component.html',
   styleUrls: ['./tables.component.scss']
 })

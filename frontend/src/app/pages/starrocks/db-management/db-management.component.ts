@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 
 @Component({
-  selector: 'app-db-management',
+  selector: 'ngx-db-management',
   templateUrl: './db-management.component.html',
   styleUrls: ['./db-management.component.scss']
 })
