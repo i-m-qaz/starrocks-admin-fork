@@ -1,0 +1,87 @@
+<div class="databases">
+  <div class="actions">
+    <button (click)="createDatabase()" [disabled]="creating" class="btn btn-success">
+      <i class="nb-plus"></i>
+      创建数据库
+    </button>
+  </div>
+
+  <!-- 创建数据库表单 -->
+  <nb-card *ngIf="!editing" class="create-form">
+    <nb-card-header>创建数据库</nb-card-header>
+    <nb-card-body>
+      <div class="form-group">
+        <label for="db-name">数据库名称</label>
+        <input type="text" id="db-name" [(ngModel)]="newDatabase.name" class="form-control" placeholder="请输入数据库名称">
+      </div>
+      <div class="form-group">
+        <label for="db-comment">备注</label>
+        <input type="text" id="db-comment" [(ngModel)]="newDatabase.comment" class="form-control" placeholder="请输入备注">
+      </div>
+    </nb-card-body>
+    <nb-card-footer>
+      <button (click)="createDatabase()" [disabled]="creating" class="btn btn-success">
+        {{ creating ? '创建中...' : '创建' }}
+      </button>
+    </nb-card-footer>
+  </nb-card>
+
+  <!-- 编辑数据库表单 -->
+  <nb-card *ngIf="editing" class="edit-form">
+    <nb-card-header>编辑数据库</nb-card-header>
+    <nb-card-body>
+      <div class="form-group">
+        <label>数据库名称</label>
+        <input type="text" [(ngModel)]="currentDatabase.name" class="form-control" disabled>
+      </div>
+      <div class="form-group">
+        <label>备注</label>
+        <input type="text" [(ngModel)]="currentDatabase.comment" class="form-control" placeholder="请输入备注">
+      </div>
+    </nb-card-body>
+    <nb-card-footer>
+      <button (click)="updateDatabase()" class="btn btn-success">更新</button>
+      <button (click)="cancelEdit()" class="btn btn-default">取消</button>
+    </nb-card-footer>
+  </nb-card>
+
+  <!-- 数据库列表 -->
+  <nb-card class="databases-list">
+    <nb-card-header>
+      <h3>数据库列表</h3>
+      <div class="header-actions">
+        <button (click)="loadDatabases()" [disabled]="loading" class="btn btn-sm btn-default">
+          <i class="nb-refresh"></i>
+          刷新
+        </button>
+      </div>
+    </nb-card-header>
+    <nb-card-body>
+      <nb-list *ngIf="!loading">
+        <nb-list-item *ngFor="let database of databases" class="database-item">
+          <div class="database-info">
+            <h4>{{ database.name }}</h4>
+            <p *ngIf="database.comment">{{ database.comment }}</p>
+            <small>表数量: {{ database.tables_count }}</small>
+          </div>
+          <div class="database-actions">
+            <button (click)="editDatabase(database)" class="btn btn-sm btn-primary">
+              编辑
+            </button>
+            <button (click)="deleteDatabase(database)" class="btn btn-sm btn-danger">
+              删除
+            </button>
+          </div>
+        </nb-list-item>
+      </nb-list>
+      <div *ngIf="loading" class="loading">
+        <nb-spinner size="large"></nb-spinner>
+        <p>加载中...</p>
+      </div>
+      <div *ngIf="!loading && databases.length === 0" class="empty">
+        <nb-icon icon="database-outline" size="xxlarge"></nb-icon>
+        <p>暂无数据库</p>
+      </div>
+    </nb-card-body>
+  </nb-card>
+</div>

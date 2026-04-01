@@ -17,3 +17,4 @@ pub mod system_management;
 pub mod user;
 pub mod user_role;
 pub mod variables;
+pub mod db_table_management;

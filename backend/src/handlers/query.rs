@@ -67,7 +67,7 @@ pub async fn list_catalogs(
 // Get list of databases in a catalog using MySQL client
 #[utoipa::path(
     get,
-    path = "/api/clusters/databases",
+    path = "/api/clusters/query/databases",
     params(
         ("catalog" = Option<String>, Query, description = "Catalog name (optional)")
     ),
@@ -127,7 +127,7 @@ pub async fn list_databases(
 // Get list of tables within a database (optional catalog) using MySQL client
 #[utoipa::path(
     get,
-    path = "/api/clusters/tables",
+    path = "/api/clusters/query/tables",
     params(
         ("catalog" = Option<String>, Query, description = "Catalog name (optional)"),
         ("database" = String, Query, description = "Database name")

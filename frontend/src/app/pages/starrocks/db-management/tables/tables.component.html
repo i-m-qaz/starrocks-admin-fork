@@ -1,0 +1,178 @@
+<div class="tables">
+  <div class="actions">
+    <button (click)="createTable()" [disabled]="creating" class="btn btn-success">
+      <i class="nb-plus"></i>
+      创建表
+    </button>
+  </div>
+
+  <!-- 创建表表单 -->
+  <nb-card *ngIf="!editing" class="create-form">
+    <nb-card-header>创建表</nb-card-header>
+    <nb-card-body>
+      <div class="form-group">
+        <label for="table-database">数据库</label>
+        <select id="table-database" [(ngModel)]="newTable.database" class="form-control">
+          <option *ngFor="let db of databases" [value]="db.name">{{ db.name }}</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="table-name">表名称</label>
+        <input type="text" id="table-name" [(ngModel)]="newTable.name" class="form-control" placeholder="请输入表名称">
+      </div>
+      
+      <div class="form-group">
+        <label for="table-type">表类型</label>
+        <select id="table-type" [(ngModel)]="newTable.table_type" class="form-control">
+          <option *ngFor="let type of tableTypes" [value]="type.value">{{ type.label }}</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label>列定义</label>
+        <div *ngFor="let column of newTable.columns; let i = index" class="column-item">
+          <div class="column-fields">
+            <input type="text" [(ngModel)]="column.name" placeholder="列名" class="form-control">
+            <select [(ngModel)]="column.data_type" class="form-control">
+              <option *ngFor="let type of dataTypes" [value]="type">{{ type }}</option>
+            </select>
+            <select *ngIf="newTable.table_type === 'aggregate'" [(ngModel)]="column.aggregate_type" class="form-control">
+              <option value="">无聚合</option>
+              <option *ngFor="let agg of aggregateTypes" [value]="agg">{{ agg }}</option>
+            </select>
+            <input type="text" [(ngModel)]="column.default_value" placeholder="默认值" class="form-control">
+            <input type="text" [(ngModel)]="column.comment" placeholder="备注" class="form-control">
+            <nb-checkbox [(ngModel)]="column.is_nullable">允许空</nb-checkbox>
+            <nb-checkbox [(ngModel)]="column.is_key">主键</nb-checkbox>
+            <button (click)="removeColumn(i)" class="btn btn-sm btn-danger">
+              <i class="nb-trash"></i>
+            </button>
+          </div>
+        </div>
+        <button (click)="addColumn()" class="btn btn-sm btn-primary">
+          <i class="nb-plus"></i>
+          添加列
+        </button>
+      </div>
+      
+      <div class="form-group">
+        <label>分区管理</label>
+        <div class="partition-settings">
+          <select [(ngModel)]="newTable.partition_info.partition_type" class="form-control">
+            <option *ngFor="let type of partitionTypes" [value]="type.value">{{ type.label }}</option>
+          </select>
+          <input type="text" [(ngModel)]="newTable.partition_info.partition_key" placeholder="分区键" class="form-control">
+          <div *ngFor="let partition of newTable.partition_info.partitions; let i = index" class="partition-item">
+            <input type="text" [(ngModel)]="partition.name" placeholder="分区名" class="form-control">
+            <input type="text" [(ngModel)]="partition.values" placeholder="分区值" class="form-control">
+            <button (click)="removePartition(i)" class="btn btn-sm btn-danger">
+              <i class="nb-trash"></i>
+            </button>
+          </div>
+          <button (click)="addPartition()" class="btn btn-sm btn-primary">
+            <i class="nb-plus"></i>
+            添加分区
+          </button>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label>分桶管理</label>
+        <div class="bucket-settings">
+          <select [(ngModel)]="newTable.bucket_info.bucket_type" class="form-control">
+            <option *ngFor="let type of bucketTypes" [value]="type.value">{{ type.label }}</option>
+          </select>
+          <input type="text" [(ngModel)]="newTable.bucket_info.bucket_keys" placeholder="分桶键，多个用逗号分隔" class="form-control">
+          <input type="number" [(ngModel)]="newTable.bucket_info.bucket_count" placeholder="分桶数" class="form-control">
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label for="table-comment">备注</label>
+        <input type="text" id="table-comment" [(ngModel)]="newTable.comment" class="form-control" placeholder="请输入备注">
+      </div>
+    </nb-card-body>
+    <nb-card-footer>
+      <button (click)="createTable()" [disabled]="creating" class="btn btn-success">
+        {{ creating ? '创建中...' : '创建' }}
+      </button>
+    </nb-card-footer>
+  </nb-card>
+
+  <!-- 编辑表表单 -->
+  <nb-card *ngIf="editing" class="edit-form">
+    <nb-card-header>编辑表</nb-card-header>
+    <nb-card-body *ngIf="currentTable">
+      <div class="form-group">
+        <label>数据库</label>
+        <input type="text" [(ngModel)]="currentTable.database" class="form-control" disabled>
+      </div>
+      
+      <div class="form-group">
+        <label>表名称</label>
+        <input type="text" [(ngModel)]="currentTable.name" class="form-control" disabled>
+      </div>
+      
+      <div class="form-group">
+        <label>表类型</label>
+        <input type="text" [(ngModel)]="currentTable.table_type" class="form-control" disabled>
+      </div>
+      
+      <div class="form-group">
+        <label>备注</label>
+        <input type="text" [(ngModel)]="currentTable.comment" class="form-control" placeholder="请输入备注">
+      </div>
+    </nb-card-body>
+    <nb-card-footer>
+      <button (click)="updateTable()" class="btn btn-success">更新</button>
+      <button (click)="cancelEdit()" class="btn btn-default">取消</button>
+    </nb-card-footer>
+  </nb-card>
+
+  <!-- 表列表 -->
+  <nb-card class="tables-list">
+    <nb-card-header>
+      <h3>表列表</h3>
+      <div class="header-actions">
+        <button (click)="loadTables()" [disabled]="loading" class="btn btn-sm btn-default">
+          <i class="nb-refresh"></i>
+          刷新
+        </button>
+      </div>
+    </nb-card-header>
+    <nb-card-body>
+      <nb-list *ngIf="!loading">
+        <nb-list-item *ngFor="let table of tables" class="table-item">
+          <div class="table-info">
+            <h4>{{ table.database }}.{{ table.name }}</h4>
+            <p *ngIf="table.comment">{{ table.comment }}</p>
+            <small>类型: {{ table.table_type }} | 引擎: {{ table.engine }} | 行数: {{ table.rows || 0 }}</small>
+          </div>
+          <div class="table-actions">
+            <button (click)="editTable(table)" class="btn btn-sm btn-primary">
+              编辑
+            </button>
+            <button (click)="executeTableAction(table, 'truncate')" class="btn btn-sm btn-warning">
+              截断
+            </button>
+            <button (click)="executeTableAction(table, 'optimize')" class="btn btn-sm btn-info">
+              优化
+            </button>
+            <button (click)="deleteTable(table)" class="btn btn-sm btn-danger">
+              删除
+            </button>
+          </div>
+        </nb-list-item>
+      </nb-list>
+      <div *ngIf="loading" class="loading">
+        <nb-spinner size="large"></nb-spinner>
+        <p>加载中...</p>
+      </div>
+      <div *ngIf="!loading && tables.length === 0" class="empty">
+        <nb-icon icon="table-outline" size="xxlarge"></nb-icon>
+        <p>暂无表</p>
+      </div>
+    </nb-card-body>
+  </nb-card>
+</div>

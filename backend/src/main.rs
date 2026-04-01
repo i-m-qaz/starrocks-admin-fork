@@ -99,7 +99,6 @@ pub struct AppState {
         handlers::materialized_view::cancel_refresh_materialized_view,
         handlers::materialized_view::alter_materialized_view,
         handlers::query::list_catalogs,
-        handlers::query::list_databases,
         handlers::query::list_catalogs_with_databases,
         handlers::query::list_queries,
         handlers::query::kill_query,
@@ -123,6 +122,18 @@ pub struct AppState {
         handlers::overview::get_capacity_prediction,
         handlers::overview::get_extended_cluster_overview,
         handlers::cluster::test_cluster_connection,
+        // Database and Table Management
+        handlers::db_table_management::list_databases,
+        handlers::db_table_management::create_database,
+        handlers::db_table_management::get_database,
+        handlers::db_table_management::update_database,
+        handlers::db_table_management::delete_database,
+        handlers::db_table_management::list_tables,
+        handlers::db_table_management::create_table,
+        handlers::db_table_management::get_table,
+        handlers::db_table_management::update_table,
+        handlers::db_table_management::delete_table,
+        handlers::db_table_management::execute_table_action,
         // RBAC Handlers
         handlers::role::list_roles,
         handlers::role::get_role,
@@ -437,8 +448,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/clusters/frontends", get(handlers::frontend::list_frontends))
         // Queries
         .route("/api/clusters/catalogs", get(handlers::query::list_catalogs))
-        .route("/api/clusters/databases", get(handlers::query::list_databases))
-        .route("/api/clusters/tables", get(handlers::query::list_tables))
+        .route("/api/clusters/query/databases", get(handlers::query::list_databases))
+        .route("/api/clusters/query/tables", get(handlers::query::list_tables))
         .route(
             "/api/clusters/catalogs-databases",
             get(handlers::query::list_catalogs_with_databases),
@@ -564,6 +575,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "/api/clusters/overview/compaction-details",
             get(handlers::overview::get_compaction_detail_stats),
         )
+
         // RBAC Routes
         // Roles
         .route("/api/roles", get(handlers::role::list_roles).post(handlers::role::create_role))
@@ -598,6 +610,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             get(handlers::user_role::get_user_roles).post(handlers::user_role::assign_role_to_user),
         )
         .route("/api/users/:id/roles/:role_id", delete(handlers::user_role::remove_role_from_user))
+        // Database Management
+        .route("/api/clusters/databases", get(handlers::db_table_management::list_databases).post(handlers::db_table_management::create_database))
+        .route("/api/clusters/databases/:name", get(handlers::db_table_management::get_database).put(handlers::db_table_management::update_database).delete(handlers::db_table_management::delete_database))
+        // Table Management
+        .route("/api/clusters/tables", get(handlers::db_table_management::list_tables).post(handlers::db_table_management::create_table))
+        .route("/api/clusters/tables/:database/:table", get(handlers::db_table_management::get_table).put(handlers::db_table_management::update_table).delete(handlers::db_table_management::delete_table))
+        .route("/api/clusters/tables/:database/:table/action", post(handlers::db_table_management::execute_table_action))
         .with_state(Arc::clone(&app_state_arc))
         .layer(axum_middleware::from_fn_with_state(auth_state, middleware::auth_middleware));
 

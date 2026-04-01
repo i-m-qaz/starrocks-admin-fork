@@ -14,6 +14,7 @@ import { ClusterOverviewComponent } from './cluster-overview/cluster-overview.co
 import { SessionsComponent } from './sessions/sessions.component';
 import { VariablesComponent } from './variables/variables.component';
 import { SystemManagementComponent } from './system-management/system-management.component';
+import { DbManagementComponent } from './db-management/db-management.component';
 import { PermissionGuard } from '../../@core/guards/permission.guard';
 
 const routes: Routes = [
@@ -125,6 +126,10 @@ const routes: Routes = [
     component: ClusterOverviewComponent,
     canActivate: [PermissionGuard],
     data: { permission: 'menu:overview', reuse: true },
+  },
+  {
+    path: 'db-management',
+    loadChildren: () => import('./db-management/db-management.module').then(m => m.DbManagementModule),
   },
 ];
 

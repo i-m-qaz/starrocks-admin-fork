@@ -1,0 +1,60 @@
+.databases {
+  .actions {
+    margin-bottom: 1rem;
+  }
+
+  .create-form,
+  .edit-form {
+    margin-bottom: 2rem;
+  }
+
+  .databases-list {
+    .database-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      border-bottom: 1px solid #e0e0e0;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .database-info {
+        flex: 1;
+
+        h4 {
+          margin: 0 0 0.5rem 0;
+        }
+
+        p {
+          margin: 0 0 0.5rem 0;
+          color: #666;
+        }
+
+        small {
+          color: #999;
+        }
+      }
+
+      .database-actions {
+        display: flex;
+        gap: 0.5rem;
+      }
+    }
+  }
+
+  .loading,
+  .empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 0;
+
+    p {
+      margin-top: 1rem;
+      color: #666;
+    }
+  }
+}

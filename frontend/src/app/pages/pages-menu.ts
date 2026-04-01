@@ -60,6 +60,23 @@ export const MENU_ITEMS: NbMenuItem[] = [
     data: { permission: 'menu:materialized-views' },
   } as NbMenuItem & { data?: { permission: string } },
   {
+    title: '库表管理',
+    icon: 'database-outline',
+    data: { permission: 'menu:db-management' },
+    children: [
+      {
+        title: '数据库管理',
+        link: '/pages/starrocks/db-management/databases',
+        data: { permission: 'menu:db-management:databases' },
+      } as NbMenuItem & { data?: { permission: string } },
+      {
+        title: '表管理',
+        link: '/pages/starrocks/db-management/tables',
+        data: { permission: 'menu:db-management:tables' },
+      } as NbMenuItem & { data?: { permission: string } },
+    ],
+  } as NbMenuItem & { data?: { permission: string } },
+  {
     title: '功能卡片',
     icon: 'grid-outline',
     link: '/pages/starrocks/system',
