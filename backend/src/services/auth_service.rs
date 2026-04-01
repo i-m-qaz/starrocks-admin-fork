@@ -69,15 +69,14 @@ impl AuthService {
         tracing::debug!("Looking up user: {}", req.username);
 
         // Find user by username
-        let user: Option<User> = sqlx::query_as("SELECT * FROM users WHERE username = ?")
+        let mut user: User = sqlx::query_as("SELECT * FROM users WHERE username = ?")
             .bind(&req.username)
             .fetch_optional(&self.pool)
-            .await?;
-
-        let user = user.ok_or_else(|| {
-            tracing::warn!("Login failed: user '{}' not found", req.username);
-            ApiError::invalid_credentials()
-        })?;
+            .await?
+            .ok_or_else(|| {
+                tracing::warn!("Login failed: user '{}' not found", req.username);
+                ApiError::invalid_credentials()
+            })?;
 
         // Check if account is locked
         if let Some(locked_until) = user.locked_until {
@@ -98,6 +97,12 @@ impl AuthService {
                 .bind(user.id)
                 .execute(&self.pool)
                 .await?;
+                
+                // Re-fetch user to get updated values
+                user = sqlx::query_as("SELECT * FROM users WHERE id = ?")
+                    .bind(user.id)
+                    .fetch_one(&self.pool)
+                    .await?;
             }
         }
 
