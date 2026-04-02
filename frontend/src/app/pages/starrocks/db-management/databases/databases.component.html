@@ -53,7 +53,7 @@
 
 <!-- Create Dialog -->
 <ng-template #createDialog let-data let-ref="dialogRef">
-  <nb-card>
+  <nb-card class="user-dialog">
     <nb-card-header>
       <div class="d-flex justify-content-between align-items-center">
         <h5>创建数据库</h5>
@@ -94,7 +94,6 @@
                 status="primary"
                 (click)="createDatabase()"
                 [disabled]="creating || !newDatabase.name.trim()">
-          <nb-icon icon="checkmark-outline"></nb-icon>
           {{ creating ? '创建中...' : '创建' }}
         </button>
       </div>
@@ -104,7 +103,7 @@
 
 <!-- Edit Dialog -->
 <ng-template #editDialog let-data let-ref="dialogRef">
-  <nb-card *ngIf="currentDatabase">
+  <nb-card class="user-dialog" *ngIf="currentDatabase">
     <nb-card-header>
       <div class="d-flex justify-content-between align-items-center">
         <h5>编辑数据库: {{ currentDatabase.name }}</h5>
@@ -143,7 +142,6 @@
                 status="primary"
                 (click)="updateDatabase()"
                 [disabled]="updating">
-          <nb-icon icon="checkmark-outline"></nb-icon>
           {{ updating ? '更新中...' : '更新' }}
         </button>
       </div>

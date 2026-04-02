@@ -473,6 +473,7 @@ export class RoleFormDialogComponent implements OnInit {
     if (code.includes('frontends') || code.includes('backends')) return 'hard-drive-outline';
     if (code.includes('queries') || code.includes('execution') || code.includes('profiles') || code.includes('audit')) return 'search-outline';
     if (code.includes('materialized-views')) return 'layers-outline';
+    if (code.includes('db-management') || code.includes('databases') || code.includes('tables')) return 'layout-outline';
     if (code.includes('sessions')) return 'people-outline';
     if (code.includes('variables')) return 'code-outline';
     if (code.includes('system:users')) return 'person-outline';

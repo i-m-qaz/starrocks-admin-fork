@@ -61,7 +61,7 @@ export const MENU_ITEMS: NbMenuItem[] = [
   } as NbMenuItem & { data?: { permission: string } },
   {
     title: '库表管理',
-    icon: 'database-outline',
+    icon: 'layout-outline',
     data: { permission: 'menu:db-management' },
     children: [
       {

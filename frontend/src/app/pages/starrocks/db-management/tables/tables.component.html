@@ -219,7 +219,6 @@
                 status="primary"
                 (click)="createTable()"
                 [disabled]="creating || !newTable.name.trim() || !newTable.database || newTable.columns.length === 0">
-          <nb-icon icon="checkmark-outline"></nb-icon>
           {{ creating ? '创建中...' : '创建' }}
         </button>
       </div>
@@ -287,7 +286,6 @@
                 status="primary"
                 (click)="updateTable()"
                 [disabled]="updating">
-          <nb-icon icon="checkmark-outline"></nb-icon>
           {{ updating ? '更新中...' : '更新' }}
         </button>
       </div>
