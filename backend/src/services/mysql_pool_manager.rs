@@ -78,7 +78,7 @@ impl MySQLPoolManager {
     }
 
     /// Create a new MySQL connection pool for a cluster
-    async fn create_pool(&self, cluster: &Cluster) -> ApiResult<Pool> {
+    pub async fn create_pool(&self, cluster: &Cluster) -> ApiResult<Pool> {
         let opts = OptsBuilder::default()
             .ip_or_hostname(&cluster.fe_host)
             .tcp_port(cluster.fe_query_port as u16)

@@ -522,7 +522,16 @@ impl ClusterService {
         let mut overall_status = HealthStatus::Healthy;
 
         // Check connection by getting pool
-        match self.mysql_pool_manager.get_pool(cluster).await {
+        // For test clusters (id=0), create a new pool every time to avoid caching old credentials
+        let pool_result = if cluster.id == 0 {
+            // Create a new pool without caching
+            self.mysql_pool_manager.create_pool(cluster).await
+        } else {
+            // Use cached pool for existing clusters
+            self.mysql_pool_manager.get_pool(cluster).await
+        };
+
+        match pool_result {
             Ok(pool) => {
                 let mysql_client = MySQLClient::from_pool(pool);
 
