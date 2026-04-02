@@ -1,7 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, TemplateRef } from '@angular/core';
 import { ApiService } from '../../../../@core/data/api.service';
-import { NbToastrService, NbDialogService } from '@nebular/theme';
-import { ConfirmDialogComponent } from '../../../../@core/components/confirm-dialog/confirm-dialog.component';
+import { NbToastrService, NbDialogService, NbDialogRef } from '@nebular/theme';
+import { LocalDataSource } from 'ng2-smart-table';
 
 @Component({
   selector: 'ngx-tables',
@@ -10,20 +10,28 @@ import { ConfirmDialogComponent } from '../../../../@core/components/confirm-dia
 })
 export class TablesComponent implements OnInit {
 
-  tables: any[] = [];
-  databases: any[] = [];
+  @ViewChild('createDialog') createDialog!: TemplateRef<any>;
+  @ViewChild('editDialog') editDialog!: TemplateRef<any>;
+  @ViewChild('actionDialog') actionDialog!: TemplateRef<any>;
+
+  clusterName = '当前集群';
   loading = false;
   creating = false;
-  editing = false;
+  updating = false;
+  executingAction = false;
+
+  databases: any[] = [];
+  source: LocalDataSource = new LocalDataSource();
   currentTable: any = null;
+  selectedTable: any = null;
+  actionType: string | null = null;
+
   newTable = {
     database: '',
     name: '',
     table_type: 'duplicate',
     columns: [
-      {
-          name: 'id', data_type: 'BIGINT', is_nullable: false, is_key: true, comment: '', default_value: '', aggregate_type: ''
-        }
+      { name: 'id', data_type: 'BIGINT', is_nullable: false, is_key: true, comment: '', default_value: '', aggregate_type: '' }
     ],
     partition_info: {
       partition_type: 'range',
@@ -32,7 +40,7 @@ export class TablesComponent implements OnInit {
     },
     bucket_info: {
       bucket_type: 'hash',
-      bucket_keys: [],
+      bucket_keys: '',
       bucket_count: 10
     },
     comment: '',
@@ -47,6 +55,18 @@ export class TablesComponent implements OnInit {
     { value: 'update', label: '更新表' }
   ];
 
+  dataTypes = [
+    'BIGINT', 'INT', 'SMALLINT', 'TINYINT', 'BOOLEAN',
+    'DECIMAL', 'DOUBLE', 'FLOAT',
+    'VARCHAR', 'CHAR',
+    'DATE', 'DATETIME', 'TIMESTAMP',
+    'ARRAY', 'JSON'
+  ];
+
+  aggregateTypes = [
+    'SUM', 'COUNT', 'MAX', 'MIN', 'AVG', 'BITMAP_UNION', 'HLL_UNION'
+  ];
+
   partitionTypes = [
     { value: 'range', label: '范围分区' },
     { value: 'list', label: '列表分区' },
@@ -58,17 +78,75 @@ export class TablesComponent implements OnInit {
     { value: 'range', label: '范围分桶' }
   ];
 
-  dataTypes = [
-    'TINYINT', 'SMALLINT', 'INT', 'BIGINT',
-    'FLOAT', 'DOUBLE', 'DECIMAL',
-    'DATE', 'DATETIME', 'TIMESTAMP',
-    'VARCHAR', 'CHAR', 'STRING',
-    'BOOLEAN', 'ARRAY', 'MAP', 'STRUCT'
-  ];
+  private dialogRef!: NbDialogRef<any>;
 
-  aggregateTypes = [
-    'SUM', 'COUNT', 'MAX', 'MIN', 'AVG', 'BITMAP_UNION', 'HLL_UNION'
-  ];
+  settings = {
+    actions: {
+      add: false,
+      edit: true,
+      delete: true,
+      position: 'right',
+      custom: [
+        {
+          name: 'truncate',
+          title: '<i class="nb-trash"></i>',
+        },
+        {
+          name: 'optimize',
+          title: '<i class="nb-loop"></i>',
+        }
+      ]
+    },
+    edit: {
+      editButtonContent: '<i class="nb-edit"></i>',
+      saveButtonContent: '<i class="nb-checkmark"></i>',
+      cancelButtonContent: '<i class="nb-close"></i>',
+      confirmSave: false,
+    },
+    delete: {
+      deleteButtonContent: '<i class="nb-trash"></i>',
+      confirmDelete: true,
+    },
+    columns: {
+      database: {
+        title: '数据库',
+        type: 'string',
+        editable: false,
+      },
+      name: {
+        title: '表名称',
+        type: 'string',
+        editable: false,
+      },
+      table_type: {
+        title: '表类型',
+        type: 'string',
+        editable: false,
+        valuePrepareFunction: (cell: any) => {
+          const type = this.tableTypes.find(t => t.value === cell);
+          return type ? type.label : cell;
+        }
+      },
+      engine: {
+        title: '引擎',
+        type: 'string',
+        editable: false,
+      },
+      rows: {
+        title: '行数',
+        type: 'number',
+        editable: false,
+        valuePrepareFunction: (cell: any) => {
+          return cell || 0;
+        }
+      },
+      comment: {
+        title: '备注',
+        type: 'string',
+        editable: false,
+      }
+    }
+  };
 
   constructor(
     private apiService: ApiService,
@@ -99,7 +177,7 @@ export class TablesComponent implements OnInit {
     this.loading = true;
     this.apiService.get('/clusters/tables').subscribe(
       (data: any[]) => {
-        this.tables = data;
+        this.source.load(data);
         this.loading = false;
       },
       error => {
@@ -107,6 +185,44 @@ export class TablesComponent implements OnInit {
         this.loading = false;
       }
     );
+  }
+
+  openCreateDialog() {
+    this.resetNewTable();
+    this.dialogRef = this.dialogService.open(this.createDialog, {
+      context: {},
+      hasBackdrop: true,
+      closeOnBackdropClick: false,
+    });
+  }
+
+  closeCreateDialog() {
+    if (this.dialogRef) {
+      this.dialogRef.close();
+    }
+  }
+
+  resetNewTable() {
+    this.newTable = {
+      database: this.databases.length > 0 ? this.databases[0].name : '',
+      name: '',
+      table_type: 'duplicate',
+      columns: [
+        { name: 'id', data_type: 'BIGINT', is_nullable: false, is_key: true, comment: '', default_value: '', aggregate_type: '' }
+      ],
+      partition_info: {
+        partition_type: 'range',
+        partition_key: '',
+        partitions: []
+      },
+      bucket_info: {
+        bucket_type: 'hash',
+        bucket_keys: '',
+        bucket_count: 10
+      },
+      comment: '',
+      properties: {}
+    };
   }
 
   addColumn() {
@@ -139,22 +255,17 @@ export class TablesComponent implements OnInit {
   }
 
   createTable() {
-    if (!this.newTable.database || !this.newTable.name) {
-      this.toastrService.warning('请输入数据库和表名称', '警告');
-      return;
-    }
-
-    if (this.newTable.columns.length === 0) {
-      this.toastrService.warning('请至少添加一个列', '警告');
+    if (!this.newTable.name.trim() || !this.newTable.database || this.newTable.columns.length === 0) {
+      this.toastrService.warning('请填写必要的表信息', '警告');
       return;
     }
 
     this.creating = true;
     this.apiService.post('/clusters/tables', this.newTable).subscribe(
       (data: any) => {
-        this.tables.push(data);
+        this.source.append(data);
         this.toastrService.success('表创建成功', '成功');
-        this.resetNewTable();
+        this.closeCreateDialog();
         this.creating = false;
       },
       error => {
@@ -164,110 +275,128 @@ export class TablesComponent implements OnInit {
     );
   }
 
-  resetNewTable() {
-    this.newTable = {
-      database: this.databases.length > 0 ? this.databases[0].name : '',
-      name: '',
-      table_type: 'duplicate',
-      columns: [
-        { name: 'id', data_type: 'BIGINT', is_nullable: false, is_key: true, comment: '', default_value: '', aggregate_type: '' }
-      ],
-      partition_info: {
-        partition_type: 'range',
-        partition_key: '',
-        partitions: []
-      },
-      bucket_info: {
-        bucket_type: 'hash',
-        bucket_keys: [],
-        bucket_count: 10
-      },
-      comment: '',
-      properties: {}
-    };
+  onEdit(event: any) {
+    this.currentTable = { ...event.data };
+    this.dialogRef = this.dialogService.open(this.editDialog, {
+      context: {},
+      hasBackdrop: true,
+      closeOnBackdropClick: false,
+    });
   }
 
-  editTable(table: any) {
-    this.apiService.get(`/clusters/tables/${table.database}/${table.name}`).subscribe(
-      (data: any) => {
-        this.currentTable = data;
-        this.editing = true;
-      },
-      error => {
-        this.toastrService.danger('获取表详情失败', '错误');
-      }
-    );
+  closeEditDialog() {
+    if (this.dialogRef) {
+      this.dialogRef.close();
+    }
+    this.currentTable = null;
   }
 
   updateTable() {
     if (!this.currentTable) return;
 
+    this.updating = true;
     this.apiService.put(`/clusters/tables/${this.currentTable.database}/${this.currentTable.name}`, {
-      columns: this.currentTable.columns.map((col: any) => ({
-        name: col.name,
-        type: col.type,
-        is_nullable: col.is_nullable,
-        is_key: false,
-        comment: col.comment,
-        default_value: col.default_value,
-        aggregate_type: ''
-      })),
       comment: this.currentTable.comment
     }).subscribe(
       (data: any) => {
-        const index = this.tables.findIndex(t => t.database === data.database && t.name === data.name);
-        if (index !== -1) {
-          this.tables[index] = data;
-        }
+        this.source.update(this.currentTable, data);
         this.toastrService.success('表更新成功', '成功');
-        this.currentTable = null;
-        this.editing = false;
+        this.closeEditDialog();
+        this.updating = false;
       },
       error => {
         this.toastrService.danger('更新表失败', '错误');
+        this.updating = false;
       }
     );
   }
 
-  deleteTable(table: any) {
-    this.dialogService.open(ConfirmDialogComponent, {
-      context: {
-        title: '删除表',
-        message: `确定要删除表 ${table.database}.${table.name} 吗？此操作不可恢复。`,
-        confirmText: '删除',
-        cancelText: '取消'
-      }
-    }).onClose.subscribe(result => {
-      if (result) {
-        this.apiService.delete(`/clusters/tables/${table.database}/${table.name}`).subscribe(
-          () => {
-            this.tables = this.tables.filter(t => t.database !== table.database || t.name !== table.name);
-            this.toastrService.success('表删除成功', '成功');
-          },
-          error => {
-            this.toastrService.danger('删除表失败', '错误');
-          }
-        );
-      }
+  onDelete(event: any) {
+    const table = event.data;
+    if (confirm(`确定要删除表 ${table.database}.${table.name} 吗？此操作不可恢复。`)) {
+      this.apiService.delete(`/clusters/tables/${table.database}/${table.name}`).subscribe(
+        () => {
+          this.source.remove(table);
+          this.toastrService.success('表删除成功', '成功');
+        },
+        error => {
+          this.toastrService.danger('删除表失败', '错误');
+        }
+      );
+    }
+  }
+
+  openActionDialog(table: any, action: string) {
+    this.selectedTable = table;
+    this.actionType = action;
+    this.dialogRef = this.dialogService.open(this.actionDialog, {
+      context: {},
+      hasBackdrop: true,
+      closeOnBackdropClick: false,
     });
   }
 
-  executeTableAction(table: any, action: string) {
-    this.apiService.post(`/clusters/tables/${table.database}/${table.name}/action`, {
-      action: action
+  closeActionDialog() {
+    if (this.dialogRef) {
+      this.dialogRef.close();
+    }
+    this.selectedTable = null;
+    this.actionType = null;
+  }
+
+  executeTableAction() {
+    if (!this.selectedTable || !this.actionType) return;
+
+    this.executingAction = true;
+    this.apiService.post(`/clusters/tables/${this.selectedTable.database}/${this.selectedTable.name}/action`, {
+      action: this.actionType
     }).subscribe(
       () => {
-        this.toastrService.success(`${action} 操作执行成功`, '成功');
+        this.toastrService.success(`${this.getActionTitle(this.actionType)} 操作成功`, '成功');
+        this.closeActionDialog();
+        this.executingAction = false;
       },
       error => {
-        this.toastrService.danger(`${action} 操作执行失败`, '错误');
+        this.toastrService.danger(`${this.getActionTitle(this.actionType)} 操作失败`, '错误');
+        this.executingAction = false;
       }
     );
   }
 
-  cancelEdit() {
-    this.currentTable = null;
-    this.editing = false;
+  getActionTitle(action: string): string {
+    const actionMap: { [key: string]: string } = {
+      truncate: '截断表',
+      optimize: '优化表'
+    };
+    return actionMap[action] || action;
+  }
+
+  getActionDescription(action: string): string {
+    const actionMap: { [key: string]: string } = {
+      truncate: '截断',
+      optimize: '优化'
+    };
+    return actionMap[action] || action;
+  }
+
+  getActionStatus(action: string): string {
+    const actionMap: { [key: string]: string } = {
+      truncate: 'warning',
+      optimize: 'info'
+    };
+    return actionMap[action] || 'primary';
+  }
+
+  getActionIcon(action: string): string {
+    const actionMap: { [key: string]: string } = {
+      truncate: 'trash-outline',
+      optimize: 'loop-outline'
+    };
+    return actionMap[action] || 'checkmark-outline';
+  }
+
+  onCustomAction(event: any) {
+    this.openActionDialog(event.data, event.action);
   }
 
 }

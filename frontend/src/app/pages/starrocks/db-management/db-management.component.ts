@@ -1,18 +1,9 @@
-import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component } from '@angular/core';
 
 @Component({
   selector: 'ngx-db-management',
-  templateUrl: './db-management.component.html',
-  styleUrls: ['./db-management.component.scss']
+  templateUrl: './db-management.component.html'
 })
-export class DbManagementComponent implements OnInit {
-
-  constructor(private router: Router) { }
-
-  ngOnInit(): void {
-    // 默认导航到数据库管理页面
-    this.router.navigate(['/pages/starrocks/db-management/databases']);
-  }
+export class DbManagementComponent {
 
 }

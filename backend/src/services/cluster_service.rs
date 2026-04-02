@@ -669,20 +669,19 @@ impl ClusterService {
             sql.push_str(&format!(" COMMENT '{}'", comment));
         }
 
-        if let Some(properties) = req.properties {
-            if let Some(props) = properties.as_object() {
-                if !props.is_empty() {
-                    sql.push_str(" PROPERTIES (");
-                    let mut props_str = Vec::new();
-                    for (key, value) in props {
-                        if let Some(v) = value.as_str() {
-                            props_str.push(format!("'{}' = '{}'", key, v));
-                        }
-                    }
-                    sql.push_str(&props_str.join(", "));
-                    sql.push_str(")");
+        if let Some(properties) = req.properties
+            && let Some(props) = properties.as_object()
+            && !props.is_empty()
+        {
+            sql.push_str(" PROPERTIES (");
+            let mut props_str = Vec::new();
+            for (key, value) in props {
+                if let Some(v) = value.as_str() {
+                    props_str.push(format!("'{}' = '{}'", key, v));
                 }
             }
+            sql.push_str(&props_str.join(", "));
+            sql.push(')');
         }
 
         client.execute_sql(&sql).await?;
@@ -698,18 +697,18 @@ impl ClusterService {
         let create_result = client.show_proc_raw(&sql).await?;
 
         let mut comment = None;
-        let mut create_time = "".to_string();
+        let create_time = "".to_string();
 
-        if let Some(row) = create_result.first() {
-            if let Some(create_stmt) = row.get(1).and_then(|v| v.as_str()) {
-                // Extract comment from CREATE DATABASE statement
-                if let Some(comment_match) = create_stmt.match_indices("COMMENT").next() {
-                    let rest = &create_stmt[comment_match.0..];
-                    if let Some(start) = rest.find("'") {
-                        if let Some(end) = rest[start + 1..].find("'") {
-                            comment = Some(rest[start + 1..start + 1 + end].to_string());
-                        }
-                    }
+        if let Some(row) = create_result.first()
+            && let Some(create_stmt) = row.get(1).and_then(|v| v.as_str())
+        {
+            // Extract comment from CREATE DATABASE statement
+            if let Some(comment_match) = create_stmt.match_indices("COMMENT").next() {
+                let rest = &create_stmt[comment_match.0..];
+                if let Some(start) = rest.find("'")
+                    && let Some(end) = rest[start + 1..].find("'")
+                {
+                    comment = Some(rest[start + 1..start + 1 + end].to_string());
                 }
             }
         }
@@ -737,20 +736,19 @@ impl ClusterService {
             sql.push_str(&format!(" COMMENT '{}'", comment));
         }
 
-        if let Some(properties) = req.properties {
-            if let Some(props) = properties.as_object() {
-                if !props.is_empty() {
-                    sql.push_str(" SET PROPERTIES (");
-                    let mut props_str = Vec::new();
-                    for (key, value) in props {
-                        if let Some(v) = value.as_str() {
-                            props_str.push(format!("'{}' = '{}'", key, v));
-                        }
-                    }
-                    sql.push_str(&props_str.join(", "));
-                    sql.push_str(")");
+        if let Some(properties) = req.properties
+            && let Some(props) = properties.as_object()
+            && !props.is_empty()
+        {
+            sql.push_str(" SET PROPERTIES (");
+            let mut props_str = Vec::new();
+            for (key, value) in props {
+                if let Some(v) = value.as_str() {
+                    props_str.push(format!("'{}' = '{}'", key, v));
                 }
             }
+            sql.push_str(&props_str.join(", "));
+            sql.push(')');
         }
 
         client.execute_sql(&sql).await?;
@@ -845,7 +843,7 @@ impl ClusterService {
             columns.push(col_def);
         }
         sql.push_str(&columns.join(", "));
-        sql.push_str(")");
+        sql.push(')');
 
         // Add partition info
         if let Some(partition_info) = req.partition_info {
@@ -857,7 +855,7 @@ impl ClusterService {
                     partitions.push(format!("PARTITION {} VALUES ({})", part.name, part.values));
                 }
                 sql.push_str(&partitions.join(", "));
-                sql.push_str(")");
+                sql.push(')');
             }
         }
 
@@ -872,20 +870,19 @@ impl ClusterService {
         }
 
         // Add properties
-        if let Some(properties) = req.properties {
-            if let Some(props) = properties.as_object() {
-                if !props.is_empty() {
-                    sql.push_str(" PROPERTIES (");
-                    let mut props_str = Vec::new();
-                    for (key, value) in props {
-                        if let Some(v) = value.as_str() {
-                            props_str.push(format!("'{}' = '{}'", key, v));
-                        }
-                    }
-                    sql.push_str(&props_str.join(", "));
-                    sql.push_str(")");
+        if let Some(properties) = req.properties
+            && let Some(props) = properties.as_object()
+            && !props.is_empty()
+        {
+            sql.push_str(" PROPERTIES (");
+            let mut props_str = Vec::new();
+            for (key, value) in props {
+                if let Some(v) = value.as_str() {
+                    props_str.push(format!("'{}' = '{}'", key, v));
                 }
             }
+            sql.push_str(&props_str.join(", "));
+            sql.push(')');
         }
 
         client.execute_sql(&sql).await?;
@@ -912,31 +909,31 @@ impl ClusterService {
         let create_result = client.show_proc_raw(&sql).await?;
 
         let mut table_type = "duplicate".to_string();
-        let mut engine = "OLAP".to_string();
-        let mut create_time = "".to_string();
+        let engine = "OLAP".to_string();
+        let create_time = "".to_string();
         let mut comment = None;
 
-        if let Some(row) = create_result.first() {
-            if let Some(create_stmt) = row.get(1).and_then(|v| v.as_str()) {
-                // Extract table type
-                if create_stmt.contains("AGGREGATE TABLE") {
-                    table_type = "aggregate".to_string();
-                } else if create_stmt.contains("UNIQUE TABLE") {
-                    table_type = "unique".to_string();
-                } else if create_stmt.contains("PRIMARY KEY TABLE") {
-                    table_type = "primary".to_string();
-                } else if create_stmt.contains("UPDATE TABLE") {
-                    table_type = "update".to_string();
-                }
+        if let Some(row) = create_result.first()
+            && let Some(create_stmt) = row.get(1).and_then(|v| v.as_str())
+        {
+            // Extract table type
+            if create_stmt.contains("AGGREGATE TABLE") {
+                table_type = "aggregate".to_string();
+            } else if create_stmt.contains("UNIQUE TABLE") {
+                table_type = "unique".to_string();
+            } else if create_stmt.contains("PRIMARY KEY TABLE") {
+                table_type = "primary".to_string();
+            } else if create_stmt.contains("UPDATE TABLE") {
+                table_type = "update".to_string();
+            }
 
-                // Extract comment
-                if let Some(comment_match) = create_stmt.match_indices("COMMENT").next() {
-                    let rest = &create_stmt[comment_match.0..];
-                    if let Some(start) = rest.find("'") {
-                        if let Some(end) = rest[start + 1..].find("'") {
-                            comment = Some(rest[start + 1..start + 1 + end].to_string());
-                        }
-                    }
+            // Extract comment
+            if let Some(comment_match) = create_stmt.match_indices("COMMENT").next() {
+                let rest = &create_stmt[comment_match.0..];
+                if let Some(start) = rest.find("'")
+                    && let Some(end) = rest[start + 1..].find("'")
+                {
+                    comment = Some(rest[start + 1..start + 1 + end].to_string());
                 }
             }
         }

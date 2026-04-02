@@ -70,7 +70,7 @@ pub async fn list_databases(
 )]
 pub async fn create_database(
     State(state): State<Arc<AppState>>,
-    Extension(org_ctx): Extension<crate::middleware::OrgContext>,
+    Extension(_org_ctx): Extension<crate::middleware::OrgContext>,
     Json(req): Json<CreateDatabaseRequest>,
 ) -> ApiResult<Json<DatabaseResponse>> {
     tracing::info!("Creating database: {}", req.name);
@@ -97,8 +97,8 @@ pub async fn create_database(
 )]
 pub async fn get_database(
     State(state): State<Arc<AppState>>,
+    Extension(_org_ctx): Extension<crate::middleware::OrgContext>,
     Path(name): Path<String>,
-    Extension(org_ctx): Extension<crate::middleware::OrgContext>,
 ) -> ApiResult<Json<DatabaseResponse>> {
     tracing::debug!("Getting database: {}", name);
     
@@ -125,8 +125,8 @@ pub async fn get_database(
 )]
 pub async fn update_database(
     State(state): State<Arc<AppState>>,
+    Extension(_org_ctx): Extension<crate::middleware::OrgContext>,
     Path(name): Path<String>,
-    Extension(org_ctx): Extension<crate::middleware::OrgContext>,
     Json(req): Json<UpdateDatabaseRequest>,
 ) -> ApiResult<Json<DatabaseResponse>> {
     tracing::info!("Updating database: {}", name);
@@ -153,8 +153,8 @@ pub async fn update_database(
 )]
 pub async fn delete_database(
     State(state): State<Arc<AppState>>,
+    Extension(_org_ctx): Extension<crate::middleware::OrgContext>,
     Path(name): Path<String>,
-    Extension(org_ctx): Extension<crate::middleware::OrgContext>,
 ) -> ApiResult<Json<serde_json::Value>> {
     tracing::warn!("Deleting database: {}", name);
     
@@ -326,7 +326,7 @@ pub async fn list_tables(
 )]
 pub async fn create_table(
     State(state): State<Arc<AppState>>,
-    Extension(org_ctx): Extension<crate::middleware::OrgContext>,
+    Extension(_org_ctx): Extension<crate::middleware::OrgContext>,
     Json(req): Json<CreateTableRequest>,
 ) -> ApiResult<Json<TableResponse>> {
     tracing::info!("Creating table: {}.{}", req.database, req.name);
@@ -355,7 +355,7 @@ pub async fn create_table(
 pub async fn get_table(
     State(state): State<Arc<AppState>>,
     Path((database, table)): Path<(String, String)>,
-    Extension(org_ctx): Extension<crate::middleware::OrgContext>,
+    Extension(_org_ctx): Extension<crate::middleware::OrgContext>,
 ) -> ApiResult<Json<TableDetailResponse>> {
     tracing::debug!("Getting table: {}.{}", database, table);
     
@@ -384,7 +384,7 @@ pub async fn get_table(
 pub async fn update_table(
     State(state): State<Arc<AppState>>,
     Path((database, table)): Path<(String, String)>,
-    Extension(org_ctx): Extension<crate::middleware::OrgContext>,
+    Extension(_org_ctx): Extension<crate::middleware::OrgContext>,
     Json(req): Json<UpdateTableRequest>,
 ) -> ApiResult<Json<TableResponse>> {
     tracing::info!("Updating table: {}.{}", database, table);
@@ -413,7 +413,7 @@ pub async fn update_table(
 pub async fn delete_table(
     State(state): State<Arc<AppState>>,
     Path((database, table)): Path<(String, String)>,
-    Extension(org_ctx): Extension<crate::middleware::OrgContext>,
+    Extension(_org_ctx): Extension<crate::middleware::OrgContext>,
 ) -> ApiResult<Json<serde_json::Value>> {
     tracing::warn!("Deleting table: {}.{}", database, table);
     
@@ -442,7 +442,7 @@ pub async fn delete_table(
 pub async fn execute_table_action(
     State(state): State<Arc<AppState>>,
     Path((database, table)): Path<(String, String)>,
-    Extension(org_ctx): Extension<crate::middleware::OrgContext>,
+    Extension(_org_ctx): Extension<crate::middleware::OrgContext>,
     Json(req): Json<TableActionRequest>,
 ) -> ApiResult<Json<serde_json::Value>> {
     tracing::info!("Executing action '{}' on table: {}.{}", req.action, database, table);
