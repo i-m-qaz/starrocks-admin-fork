@@ -99,6 +99,7 @@ pub struct AppState {
         handlers::materialized_view::cancel_refresh_materialized_view,
         handlers::materialized_view::alter_materialized_view,
         handlers::query::list_catalogs,
+        handlers::query::list_databases,
         handlers::query::list_catalogs_with_databases,
         handlers::query::list_queries,
         handlers::query::kill_query,

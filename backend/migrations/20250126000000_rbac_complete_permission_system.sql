@@ -149,8 +149,8 @@ INSERT OR IGNORE INTO permissions (code, name, type, resource, action, descripti
 INSERT OR IGNORE INTO permissions (code, name, type, resource, action, description) VALUES
 -- Catalog and Database
 ('api:clusters:catalogs', '查询Catalog列表', 'api', 'clusters', 'catalogs', 'GET /api/clusters/catalogs'),
-('api:clusters:databases', '查询数据库列表', 'api', 'clusters', 'databases', 'GET /api/clusters/databases'),
-('api:clusters:tables', '查询表列表', 'api', 'clusters', 'tables', 'GET /api/clusters/tables'),
+('api:clusters:query:databases', '查询数据库列表', 'api', 'clusters', 'databases', 'GET /api/clusters/query/databases'),
+('api:clusters:query:tables', '查询表列表', 'api', 'clusters', 'tables', 'GET /api/clusters/query/tables'),
 ('api:clusters:catalogs:databases', '查询Catalog和数据库树', 'api', 'clusters', 'catalogs:databases', 'GET /api/clusters/catalogs-databases'),
 -- Query Operations
 ('api:clusters:queries', '查询管理', 'api', 'clusters', 'queries', 'GET /api/clusters/queries'),
@@ -368,8 +368,8 @@ LIMIT 1;
 --
 -- 【实时查询】menu:queries:execution
 --   ├─ api:clusters:catalogs          (GET /api/clusters/catalogs)
---   ├─ api:clusters:databases         (GET /api/clusters/databases)
---   ├─ api:clusters:tables            (GET /api/clusters/tables)
+--   ├─ api:clusters:query:databases         (GET /api/clusters/query/databases)
+--   ├─ api:clusters:query:tables            (GET /api/clusters/query/tables)
 --   ├─ api:clusters:catalogs:databases (GET /api/clusters/catalogs-databases)
 --   ├─ api:clusters:queries           (GET /api/clusters/queries)
 --   ├─ api:clusters:queries:execute   (POST /api/clusters/queries/execute)
@@ -533,8 +533,8 @@ UPDATE permissions
 SET parent_id = (SELECT id FROM permissions WHERE code = 'menu:queries:execution')
 WHERE code IN (
     'api:clusters:catalogs',
-    'api:clusters:databases',
-    'api:clusters:tables',
+    'api:clusters:query:databases',
+    'api:clusters:query:tables',
     'api:clusters:catalogs:databases'
 );
 

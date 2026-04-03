@@ -116,6 +116,15 @@ fn extract_clusters_special_paths(segments: &[&str], method: &str) -> Option<Str
 
     // Special route handlers
     let handlers: Vec<RouteHandler> = vec![
+        // Handle /api/clusters/query/databases and /api/clusters/query/tables
+        Box::new(|seg, m| {
+            if m == "GET" && seg.len() >= 3 && seg.get(1) == Some(&"query") {
+                let resource = seg.get(2)?;
+                Some(resource.to_string())
+            } else {
+                None
+            }
+        }),
         Box::new(|seg, m| {
             if m == "DELETE" && seg.len() == 4 && seg.get(1) == Some(&"backends") {
                 Some("backends:delete".to_string())

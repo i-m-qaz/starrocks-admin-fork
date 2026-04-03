@@ -386,7 +386,7 @@ export class NodeService {
   getDatabases(catalog?: string): Observable<string[]> {
     // Always pass catalog parameter, even if empty - backend expects it
     const params = catalog ? { catalog } : {};
-    return this.api.get<string[]>(`/clusters/databases`, params);
+    return this.api.get<string[]>(`/clusters/query/databases`, params);
   }
 
   // Get tables list for a database within an optional catalog
@@ -395,7 +395,7 @@ export class NodeService {
     if (catalog) {
       params.catalog = catalog;
     }
-    return this.api.get<TableInfo[]>(`/clusters/tables`, params);
+    return this.api.get<TableInfo[]>(`/clusters/query/tables`, params);
   }
 
   // Execute SQL API
