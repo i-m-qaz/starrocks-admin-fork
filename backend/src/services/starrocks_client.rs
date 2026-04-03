@@ -69,6 +69,11 @@ impl StarRocksClient {
         mysql_client.query(&sql).await
     }
 
+    pub async fn execute_show_command(&self, command: &str) -> ApiResult<Vec<Value>> {
+        let mysql_client = self.mysql_client().await?;
+        mysql_client.query(command).await
+    }
+
     async fn show_proc_entities<T>(&self, path: &str) -> ApiResult<Vec<T>>
     where
         T: DeserializeOwned,

@@ -650,7 +650,7 @@ impl ClusterService {
         let client = StarRocksClient::new(cluster, self.mysql_pool_manager.clone());
 
         let sql = "SHOW DATABASES";
-        let result = client.show_proc_raw(sql).await?;
+        let result = client.execute_show_command(sql).await?;
 
         let mut databases = Vec::new();
         for row in result {
@@ -703,7 +703,7 @@ impl ClusterService {
 
         // Get database comment and create time
         let sql = format!("SHOW CREATE DATABASE {}", name);
-        let create_result = client.show_proc_raw(&sql).await?;
+        let create_result = client.execute_show_command(&sql).await?;
 
         let mut comment = None;
         let create_time = "".to_string();
@@ -724,7 +724,7 @@ impl ClusterService {
 
         // Get tables count
         let tables_sql = format!("SHOW TABLES FROM {}", name);
-        let tables_result = client.show_proc_raw(&tables_sql).await?;
+        let tables_result = client.execute_show_command(&tables_sql).await?;
         let tables_count = tables_result.len() as i64;
 
         Ok(DatabaseResponse {
@@ -783,7 +783,7 @@ impl ClusterService {
         let client = StarRocksClient::new(cluster, self.mysql_pool_manager.clone());
 
         let sql = "SHOW DATABASES";
-        let databases_result = client.show_proc_raw(sql).await?;
+        let databases_result = client.execute_show_command(sql).await?;
 
         let mut tables = Vec::new();
         for db_row in databases_result {
@@ -794,7 +794,7 @@ impl ClusterService {
                 }
 
                 let tables_sql = format!("SHOW TABLES FROM {}", db_name);
-                let tables_result = client.show_proc_raw(&tables_sql).await?;
+                let tables_result = client.execute_show_command(&tables_sql).await?;
 
                 for table_row in tables_result {
                     if let Some(table_name) = table_row.get(0).and_then(|v| v.as_str()) {
@@ -915,7 +915,7 @@ impl ClusterService {
 
         // Get table basic info
         let sql = format!("SHOW CREATE TABLE {}.{}", database, table);
-        let create_result = client.show_proc_raw(&sql).await?;
+        let create_result = client.execute_show_command(&sql).await?;
 
         let mut table_type = "duplicate".to_string();
         let engine = "OLAP".to_string();
@@ -949,7 +949,7 @@ impl ClusterService {
 
         // Get columns
         let columns_sql = format!("SHOW COLUMNS FROM {}.{}", database, table);
-        let columns_result = client.show_proc_raw(&columns_sql).await?;
+        let columns_result = client.execute_show_command(&columns_sql).await?;
 
         let mut columns = Vec::new();
         for col_row in columns_result {
@@ -971,7 +971,7 @@ impl ClusterService {
 
         // Get partitions
         let partitions_sql = format!("SHOW PARTITIONS FROM {}.{}", database, table);
-        let partitions_result = client.show_proc_raw(&partitions_sql).await?;
+        let partitions_result = client.execute_show_command(&partitions_sql).await?;
 
         let mut partitions = Vec::new();
         for part_row in partitions_result {

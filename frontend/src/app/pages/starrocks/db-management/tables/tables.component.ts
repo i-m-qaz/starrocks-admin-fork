@@ -2,6 +2,8 @@ import { Component, OnInit, ViewChild, TemplateRef } from '@angular/core';
 import { ApiService } from '../../../../@core/data/api.service';
 import { NbToastrService, NbDialogService, NbDialogRef } from '@nebular/theme';
 import { LocalDataSource } from 'ng2-smart-table';
+import { ClusterContextService } from '../../../../@core/data/cluster-context.service';
+import { Cluster } from '../../../../@core/data/cluster.service';
 
 @Component({
   selector: 'ngx-tables',
@@ -14,7 +16,7 @@ export class TablesComponent implements OnInit {
   @ViewChild('editDialog') editDialog!: TemplateRef<any>;
   @ViewChild('actionDialog') actionDialog!: TemplateRef<any>;
 
-  clusterName = '当前集群';
+  activeCluster: Cluster | null = null;
   loading = false;
   creating = false;
   updating = false;
@@ -151,10 +153,17 @@ export class TablesComponent implements OnInit {
   constructor(
     private apiService: ApiService,
     private toastrService: NbToastrService,
-    private dialogService: NbDialogService
+    private dialogService: NbDialogService,
+    private clusterContextService: ClusterContextService
   ) { }
 
   ngOnInit(): void {
+    // Subscribe to active cluster changes
+    this.clusterContextService.activeCluster$
+      .subscribe(cluster => {
+        this.activeCluster = cluster;
+      });
+
     this.loadDatabases();
     this.loadTables();
   }
