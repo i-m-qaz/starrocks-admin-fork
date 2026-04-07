@@ -91,7 +91,7 @@ export class TablesComponent implements OnInit {
       custom: [
         {
           name: 'truncate',
-          title: '<i class="nb-trash"></i>',
+          title: '✂️',
         },
         {
           name: 'optimize',
