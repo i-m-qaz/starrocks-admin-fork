@@ -654,9 +654,10 @@ impl ClusterService {
 
         let mut databases = Vec::new();
         for row in result {
-            if let Some(name) = row.get(0).and_then(|v| v.as_str()) {
+            if let Some(name) = row.get("Database").and_then(|v| v.as_str())
+            {
                 // Skip system databases
-                if name == "information_schema" || name == "performance_schema" || name == "mysql" {
+                if name == "information_schema" || name == "performance_schema" || name == "mysql" || name == "_statistics_" || name == "starrocks_audit_db__" || name == "sys" {
                     continue;
                 }
 
@@ -709,7 +710,11 @@ impl ClusterService {
         let create_time = "".to_string();
 
         if let Some(row) = create_result.first()
-            && let Some(create_stmt) = row.get(1).and_then(|v| v.as_str())
+            && let Some(create_stmt) = row.get("Create Database").and_then(|v| v.as_str())
+                .or_else(|| row.get("Create database").and_then(|v| v.as_str()))
+                .or_else(|| row.get("Create Database").and_then(|v| v.as_str()))
+                .or_else(|| row.get("create database").and_then(|v| v.as_str()))
+                .or_else(|| row.get(1).and_then(|v| v.as_str())) // Fallback to index if column names don't match
         {
             // Extract comment from CREATE DATABASE statement
             if let Some(comment_match) = create_stmt.match_indices("COMMENT").next() {
@@ -787,9 +792,10 @@ impl ClusterService {
 
         let mut tables = Vec::new();
         for db_row in databases_result {
-            if let Some(db_name) = db_row.get(0).and_then(|v| v.as_str()) {
+            if let Some(db_name) = db_row.get("Database").and_then(|v| v.as_str())
+            {
                 // Skip system databases
-                if db_name == "information_schema" || db_name == "performance_schema" || db_name == "mysql" {
+                if db_name == "information_schema" || db_name == "performance_schema" || db_name == "mysql" || db_name == "_statistics_" || db_name == "starrocks_audit_db__" || db_name == "sys" {
                     continue;
                 }
 
@@ -797,7 +803,12 @@ impl ClusterService {
                 let tables_result = client.execute_show_command(&tables_sql).await?;
 
                 for table_row in tables_result {
-                    if let Some(table_name) = table_row.get(0).and_then(|v| v.as_str()) {
+                    let table_name = if let serde_json::Value::Object(obj) = &table_row {
+                        obj.values().next().and_then(|v| v.as_str())
+                    } else {
+                        None
+                    };
+                    if let Some(table_name) = table_name {
                         let table = self.get_table(db_name, table_name).await?;
                         tables.push(TableResponse {
                             database: db_name.to_string(),
@@ -923,7 +934,10 @@ impl ClusterService {
         let mut comment = None;
 
         if let Some(row) = create_result.first()
-            && let Some(create_stmt) = row.get(1).and_then(|v| v.as_str())
+            && let Some(create_stmt) = row.get("Create Table").and_then(|v| v.as_str())
+                .or_else(|| row.get("Create table").and_then(|v| v.as_str()))
+                .or_else(|| row.get("create table").and_then(|v| v.as_str()))
+                .or_else(|| row.get(1).and_then(|v| v.as_str())) // Fallback to index
         {
             // Extract table type
             if create_stmt.contains("AGGREGATE TABLE") {
@@ -953,11 +967,31 @@ impl ClusterService {
 
         let mut columns = Vec::new();
         for col_row in columns_result {
-            if let Some(name) = col_row.get(0).and_then(|v| v.as_str()) {
-                let type_str = col_row.get(1).and_then(|v| v.as_str()).unwrap_or("");
-                let is_nullable = col_row.get(2).and_then(|v| v.as_str()) == Some("YES");
-                let default_value = col_row.get(3).and_then(|v| v.as_str()).map(|s| s.to_string());
-                let col_comment = col_row.get(4).and_then(|v| v.as_str()).map(|s| s.to_string());
+            if let Some(name) = col_row.get("Field").and_then(|v| v.as_str())
+                .or_else(|| col_row.get("field").and_then(|v| v.as_str()))
+                .or_else(|| col_row.get("Name").and_then(|v| v.as_str()))
+                .or_else(|| col_row.get("name").and_then(|v| v.as_str()))
+                .or_else(|| col_row.get(0).and_then(|v| v.as_str())) // Fallback to index
+            {
+                let type_str = col_row.get("Type").and_then(|v| v.as_str())
+                    .or_else(|| col_row.get("type").and_then(|v| v.as_str()))
+                    .or_else(|| col_row.get(1).and_then(|v| v.as_str())) // Fallback to index
+                    .unwrap_or("");
+                
+                let is_nullable = col_row.get("Null").and_then(|v| v.as_str())
+                    .or_else(|| col_row.get("null").and_then(|v| v.as_str()))
+                    .or_else(|| col_row.get(2).and_then(|v| v.as_str())) // Fallback to index
+                    == Some("YES");
+                
+                let default_value = col_row.get("Default").and_then(|v| v.as_str())
+                    .or_else(|| col_row.get("default").and_then(|v| v.as_str()))
+                    .or_else(|| col_row.get(3).and_then(|v| v.as_str())) // Fallback to index
+                    .map(|s| s.to_string());
+                
+                let col_comment = col_row.get("Comment").and_then(|v| v.as_str())
+                    .or_else(|| col_row.get("comment").and_then(|v| v.as_str()))
+                    .or_else(|| col_row.get(4).and_then(|v| v.as_str())) // Fallback to index
+                    .map(|s| s.to_string());
 
                 columns.push(ColumnInfo {
                     name: name.to_string(),
@@ -975,11 +1009,29 @@ impl ClusterService {
 
         let mut partitions = Vec::new();
         for part_row in partitions_result {
-            if let Some(name) = part_row.get(0).and_then(|v| v.as_str()) {
-                let values = part_row.get(1).and_then(|v| v.as_str()).unwrap_or("");
-                let status = part_row.get(2).and_then(|v| v.as_str()).unwrap_or("");
-                let data_size = part_row.get(3).and_then(|v| v.as_i64());
-                let rows = part_row.get(4).and_then(|v| v.as_i64());
+            if let Some(name) = part_row.get("PartitionName").and_then(|v| v.as_str())
+                .or_else(|| part_row.get("partition_name").and_then(|v| v.as_str()))
+                .or_else(|| part_row.get("Name").and_then(|v| v.as_str()))
+                .or_else(|| part_row.get("name").and_then(|v| v.as_str()))
+                .or_else(|| part_row.get(0).and_then(|v| v.as_str())) // Fallback to index
+            {
+                let values = part_row.get("Values").and_then(|v| v.as_str())
+                    .or_else(|| part_row.get("values").and_then(|v| v.as_str()))
+                    .or_else(|| part_row.get(1).and_then(|v| v.as_str())) // Fallback to index
+                    .unwrap_or("");
+                
+                let status = part_row.get("Status").and_then(|v| v.as_str())
+                    .or_else(|| part_row.get("status").and_then(|v| v.as_str()))
+                    .or_else(|| part_row.get(2).and_then(|v| v.as_str())) // Fallback to index
+                    .unwrap_or("");
+                
+                let data_size = part_row.get("DataSize").and_then(|v| v.as_i64())
+                    .or_else(|| part_row.get("data_size").and_then(|v| v.as_i64()))
+                    .or_else(|| part_row.get(3).and_then(|v| v.as_i64())); // Fallback to index
+                
+                let rows = part_row.get("Rows").and_then(|v| v.as_i64())
+                    .or_else(|| part_row.get("rows").and_then(|v| v.as_i64()))
+                    .or_else(|| part_row.get(4).and_then(|v| v.as_i64())); // Fallback to index
 
                 partitions.push(PartitionInfo {
                     name: name.to_string(),
